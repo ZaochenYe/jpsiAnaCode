@@ -58,6 +58,15 @@ TH3D *hTrigPosMuPhivsEtavsPtInpair;
 TH3D *hMthNegMuPhivsEtavsPtInpair;
 TH3D *hTrigNegMuPhivsEtavsPtInpair;
 
+//For scanning the Stretch factor, use diff. mass bins and ranges (300, 2-5)==> 50, 2.85-3.35 to save memory
+const int    nMBins4scan = 50;
+const double lowM4scan   = 2.85;
+const double higM4scan   = 3.35;
+const double StrechStart = 0.70;
+const double deltaStretch = 0.01;
+const int    nSteps_scan  = 20;
+TH3D* hMvsPtvsRap_4scan[nSteps_scan];
+
 Bool_t   goodMuPair(const TLorentzVector posFourMom, const Bool_t isPosTrig, const TLorentzVector negFourMom, const Bool_t isNegTrig);
 Bool_t   goodMuPair(VertexCompositeTree& evtTree, const int icand);
 Double_t shiftDeltaPhi(Double_t dPhi);
@@ -105,7 +114,6 @@ void anaMcEvt(TString fileName = "CohJpsi")
 	}
 
 	bookHistos();
-
 
 	for (Long64_t jentry = 1; jentry < csTree.GetEntries(); jentry++) 
 	{
@@ -380,6 +388,15 @@ void anaMcEvt(TString fileName = "CohJpsi")
 			hMvsPtvsRap      ->Fill(y, pt,     mass);
 			hMvsAsyPhivsRap  ->Fill(y, asyPhi, mass);
 
+			//------------------Fill for the stretch factor scan--------------------------------------
+			for(int isc=0; isc<nSteps_scan; isc++)
+			{
+				double iStrech = StrechStart + isc*deltaStretch;
+
+				hMvsPtvsRap_4scan[isc] ->Fill(y, pt*iStrech, mass);
+			}
+			//----------------------------------------------------------------------------------------
+
 			TVector3 muMomDiff = posFourMom.Vect() - negFourMom.Vect();
 			TVector3 pairMom   = pairFourMom.Vect();
 
@@ -400,7 +417,7 @@ void bookHistos()
 	const Double_t mHistRapLow      = -3;
 	const Double_t mHistRapHi       = 3;
 
-	const Int_t    mHistPtBins      = 800;
+	const Int_t    mHistPtBins      = 1600;
 	const Double_t mHistPtLow       = 0;
 	const Double_t mHistPtHi        = 4;
 	
@@ -451,17 +468,27 @@ void bookHistos()
 	hPairPtResvsGenPairPt  = new TH2D("hPairPtResvsGenPairPt", "hPairPtResvsGenPairPt; J/#psi p_{T}^{Gen} (GeV/c); J/#psi p_{T}^{Rc} - p_{T}^{Gen};", 300, 0, 0.3, 300, -0.3, 0.3);
 	hRapResvsGenRap        = new TH2D("hRapResvsGenRap", "hRapResvsGenRap; pair y^{Gen}; y^{Rc} - y^{Gen};", 600, -3, 3, 1000, -0.1, 0.1);
 
-	hMvsPtvsRap_Gen     = new TH3D("hMvsPtvsRap_Gen", "hMvsPtvsRap_Gen; Rapidity; p_{T} (GeV/c); M_{#mu#mu} (GeV/c^{2})", mHistRapBins, mHistRapLow, mHistRapHi, mHistPtBins, mHistPtLow, mHistPtHi, mHistMassBins, mHistMassLow, mHistMassHi);
-	hMvsAsyPhivsRap_Gen = new TH3D("hMvsAsyPhivsRap_Gen", "hMvsAsyPhivsRap_Gen; Rapidity; #alpha; M_{#mu#mu} (GeV/c^{2})", mHistRapBins, mHistRapLow, mHistRapHi, mHistAsyPhiBins, mHistAsyPhiLow, mHistAsyPhiHi, mHistMassBins, mHistMassLow, mHistMassHi);
-	hDeltaPhivsM_Gen   = new TH2D("hDeltaPhivsM_Gen", "hDeltaPhivsM_Gen; M_{#mu#mu} (GeV/c^{2}); #phi_{#mu^{+}+#mu^{-}} - #phi_{#mu^{+}-#mu^{-}}", mHistMassBins, mHistMassLow, mHistMassHi, 120, -PI, PI);
+	hMvsPtvsRap_Gen        = new TH3D("hMvsPtvsRap_Gen", "hMvsPtvsRap_Gen; Rapidity; p_{T} (GeV/c); M_{#mu#mu} (GeV/c^{2})", mHistRapBins, mHistRapLow, mHistRapHi, mHistPtBins, mHistPtLow, mHistPtHi, mHistMassBins, mHistMassLow, mHistMassHi);
+	hMvsAsyPhivsRap_Gen    = new TH3D("hMvsAsyPhivsRap_Gen", "hMvsAsyPhivsRap_Gen; Rapidity; #alpha; M_{#mu#mu} (GeV/c^{2})", mHistRapBins, mHistRapLow, mHistRapHi, mHistAsyPhiBins, mHistAsyPhiLow, mHistAsyPhiHi, mHistMassBins, mHistMassLow, mHistMassHi);
+	hDeltaPhivsM_Gen       = new TH2D("hDeltaPhivsM_Gen", "hDeltaPhivsM_Gen; M_{#mu#mu} (GeV/c^{2}); #phi_{#mu^{+}+#mu^{-}} - #phi_{#mu^{+}-#mu^{-}}", mHistMassBins, mHistMassLow, mHistMassHi, 120, -PI, PI);
 
 	hMvsPtvsRap_woEvtSel_woSmear = new TH3D("hMvsPtvsRap_woEvtSel_woSmear", "hMvsPtvsRap_woEvtSel_woSmear; Rapidity; p_{T} (GeV/c); M_{#mu#mu} (GeV/c^{2})", mHistRapBins, mHistRapLow, mHistRapHi, mHistPtBins, mHistPtLow, mHistPtHi, mHistMassBins, mHistMassLow, mHistMassHi);
-	hMvsPtvsRap_woSmear = new TH3D("hMvsPtvsRap_woSmear", "hMvsPtvsRap_woSmear; Rapidity; p_{T} (GeV/c); M_{#mu#mu} (GeV/c^{2})", mHistRapBins, mHistRapLow, mHistRapHi, mHistPtBins, mHistPtLow, mHistPtHi, mHistMassBins, mHistMassLow, mHistMassHi);
+	hMvsPtvsRap_woSmear          = new TH3D("hMvsPtvsRap_woSmear", "hMvsPtvsRap_woSmear; Rapidity; p_{T} (GeV/c); M_{#mu#mu} (GeV/c^{2})", mHistRapBins, mHistRapLow, mHistRapHi, mHistPtBins, mHistPtLow, mHistPtHi, mHistMassBins, mHistMassLow, mHistMassHi);
 
-	hMvsPtvsRap_woEvtSel = new TH3D("hMvsPtvsRap_woEvtSel", "hMvsPtvsRap_woEvtSel; Rapidity; p_{T} (GeV/c); M_{#mu#mu} (GeV/c^{2})", mHistRapBins, mHistRapLow, mHistRapHi, mHistPtBins, mHistPtLow, mHistPtHi, mHistMassBins, mHistMassLow, mHistMassHi);
-	hMvsPtvsRap = new TH3D("hMvsPtvsRap", "hMvsPtvsRap; Rapidity; p_{T} (GeV/c); M_{#mu#mu} (GeV/c^{2})", mHistRapBins, mHistRapLow, mHistRapHi, mHistPtBins, mHistPtLow, mHistPtHi, mHistMassBins, mHistMassLow, mHistMassHi);
-	hMvsAsyPhivsRap = new TH3D("hMvsAsyPhivsRap", "hMvsAsyPhivsRap; Rapidity; #alpha; M_{#mu#mu} (GeV/c^{2})", mHistRapBins, mHistRapLow, mHistRapHi, mHistAsyPhiBins, mHistAsyPhiLow, mHistAsyPhiHi, mHistMassBins, mHistMassLow, mHistMassHi);
+	hMvsPtvsRap_woEvtSel         = new TH3D("hMvsPtvsRap_woEvtSel", "hMvsPtvsRap_woEvtSel; Rapidity; p_{T} (GeV/c); M_{#mu#mu} (GeV/c^{2})", mHistRapBins, mHistRapLow, mHistRapHi, mHistPtBins, mHistPtLow, mHistPtHi, mHistMassBins, mHistMassLow, mHistMassHi);
+	hMvsPtvsRap                  = new TH3D("hMvsPtvsRap", "hMvsPtvsRap; Rapidity; p_{T} (GeV/c); M_{#mu#mu} (GeV/c^{2})", mHistRapBins, mHistRapLow, mHistRapHi, mHistPtBins, mHistPtLow, mHistPtHi, mHistMassBins, mHistMassLow, mHistMassHi);
+	hMvsAsyPhivsRap              = new TH3D("hMvsAsyPhivsRap", "hMvsAsyPhivsRap; Rapidity; #alpha; M_{#mu#mu} (GeV/c^{2})", mHistRapBins, mHistRapLow, mHistRapHi, mHistAsyPhiBins, mHistAsyPhiLow, mHistAsyPhiHi, mHistMassBins, mHistMassLow, mHistMassHi);
 	hDeltaPhivsM = new TH2D("hDeltaPhivsM", "hDeltaPhivsM; M_{#mu#mu} (GeV/c^{2}); #phi_{#mu^{+}+#mu^{-}} - #phi_{#mu^{+}-#mu^{-}}", mHistMassBins, mHistMassLow, mHistMassHi, 120, -PI, PI);
+	
+	for(int isc=0; isc<nSteps_scan; isc++)
+	{
+		double iStrech = StrechStart + isc*deltaStretch;
+
+		hMvsPtvsRap_4scan[isc] = new TH3D(Form("hMvsPtvsRap_isc%d",isc), Form("hMvsPtvsRap_%.2f; Rapidity; p_{T} (GeV/c); M_{#mu#mu} (GeV/c^{2})",iStrech), 
+				mHistRapBins,mHistRapLow,mHistRapHi, mHistPtBins,mHistPtLow,mHistPtHi, nMBins4scan,lowM4scan,higM4scan);
+	}
+
+
 
 	const Int_t nPtBins = 25;
 	Double_t    Pt[nPtBins+1] = {0, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 3.0, 3.2, 3.6, 4.0};
@@ -580,6 +607,11 @@ void writeHistos(TString fileName)
 	hTrigPosMuPhivsEtavsPtInpair->Write();
 	hMthNegMuPhivsEtavsPtInpair->Write();
 	hTrigNegMuPhivsEtavsPtInpair->Write();
+
+	for(int isc=0; isc<nSteps_scan; isc++)
+	{
+		hMvsPtvsRap_4scan[isc] -> Write();
+	}
 
 	fOut->Close();
 }

@@ -42,19 +42,20 @@ Int_t    mXNdivisions  = 210;
 Int_t    mYNdivisions  = 208;
 
 Int_t    mLineWidth = 1;
-Int_t    cohJpsiColor   = kBlue,        cohJpsiStyle = 1;
-Int_t    incohJpsiColor = kViolet-1,    incohJpsiStyle = 1;
-Int_t    dissoJpsiColor = kMagenta-4,   dissoJpsiStyle = 1;
-Int_t    feeddownJpsiColor = kAzure+10, feeddownJpsiStyle = 1;
-Int_t    qedColor = kGreen+3, qedStyle = 1;
+Int_t    cohJpsiColor       = kBlue,      cohJpsiStyle      = 1;
+Int_t    incohJpsiColor     = kViolet-1,  incohJpsiStyle    = 1;
+Int_t    dissoJpsiColor     = kMagenta-4, dissoJpsiStyle    = 1;
+Int_t    feeddownJpsiColor  = kAzure+10,  feeddownJpsiStyle = 1;
+Int_t    qedColor = kGreen+2, qedStyle = 1;
 
 const Double_t mJpsi = 3.0969, mPsi = 3.686097;
 
-void decoupleJpsi(Bool_t incHadron = kFALSE, TString hfVetoType="Default", Double_t massLow=2.5, Double_t massHi=3.5, Double_t ptLow=0, Double_t ptHi=3.6)
+void decoupleJpsi(Bool_t incHadron = kFALSE, TString hfVetoType="Default", Double_t massLow=2.5, Double_t massHi=3.5, Double_t ptLow=0.01, Double_t ptHi=3.6)//Double_t ptHi=3.6)
 {
 	gStyle->SetOptFit(1111);
 
-	if(!hfVetoType.EqualTo("Default") && !hfVetoType.EqualTo("Tight") && !hfVetoType.EqualTo("Loose") && !hfVetoType.EqualTo("removeHF")){
+	if(!hfVetoType.EqualTo("Default") && !hfVetoType.EqualTo("Tight") && !hfVetoType.EqualTo("Loose") && !hfVetoType.EqualTo("removeHF"))
+	{
 		cout<<"Please input the correct hfVetoType string: 'Default' OR 'Tight' OR 'Loose' OR 'removeHF'"<<endl;
 		return;
 	}
@@ -62,8 +63,8 @@ void decoupleJpsi(Bool_t incHadron = kFALSE, TString hfVetoType="Default", Doubl
 	TString histoDir = "../anaData/jpsiHistos";
 	TString plotDir  = "jpsiPlots";
 
-	TString fileName = Form("%s/rawSig", histoDir.Data());
-	TString dirName  = Form("%s/rawSig", plotDir.Data());
+	TString fileName = Form( "%s/rawSig", histoDir.Data() );
+	TString dirName  = Form( "%s/rawSig", plotDir.Data()  );
 
 	if(incHadron)
 	{
@@ -90,43 +91,46 @@ void decoupleJpsi(Bool_t incHadron = kFALSE, TString hfVetoType="Default", Doubl
 	cout<<"fileName: "<<fileName<<endl;
 	cout<<"dirName: " <<dirName<<endl;
 
-	TFile *f = TFile::Open(Form("%s.root", fileName.Data()));
+	TFile *infile_rawSig = TFile::Open(Form("%s.root", fileName.Data()));
+
+	cout<<"readin data: "<< infile_rawSig->GetName() << endl;
 
 	system(Form("mkdir -p %s", dirName.Data()));
 	system(Form("rm -rf %s/*", dirName.Data()));
 
-	TCanvas* c1 = new TCanvas("c1", "c1", 0, 0, 800, 600);
-	setPad(0.12, 0.08, 0.07, 0.13);
 
-	TH3D *hMvsPtvsRap = (TH3D *)f->Get("hMvsPtvsRap");
+	TH3D *hMvsPtvsRap = (TH3D *)infile_rawSig->Get("hMvsPtvsRap"); //y:pt:mass
 
 	TH1D *hMass = nullptr, *hPt = nullptr, *hPt_SideBand = nullptr;
 	TH1D *hMass_Rap[nRapBins], *hPt_Rap[nRapBins], *hPt_SideBand_Rap[nRapBins], *hPt_LowMassBand_Rap[nRapBins], *hPt_HiMassBand_Rap[nRapBins];
 	
 	for(Int_t irap=0; irap<nRapBins; irap++)
 	{
-		Int_t ptBinLow   = 1;
-		Int_t ptBinHi    = hMvsPtvsRap->GetNbinsY();
-		Int_t massBinLow = hMvsPtvsRap->GetZaxis()->FindBin(mJpsiMassLow  + mTinyNum);
-		Int_t massBinHi  = hMvsPtvsRap->GetZaxis()->FindBin(mJpsiMassHi   - mTinyNum);
-		Int_t rapBinLow  = hMvsPtvsRap->GetXaxis()->FindBin(mRapLow[irap] + mTinyNum);
-		Int_t rapBinHi   = hMvsPtvsRap->GetXaxis()->FindBin(mRapHi[irap]  - mTinyNum);
+		Int_t ptBinLow         = 1;
+		Int_t ptBinHi          = hMvsPtvsRap->GetNbinsY();
+		Int_t rapBinLow        = hMvsPtvsRap->GetXaxis()->FindBin( mRapLow[irap]   + mTinyNum );
+		Int_t rapBinHi         = hMvsPtvsRap->GetXaxis()->FindBin( mRapHi[irap]    - mTinyNum );
 		
-		hPt_Rap[irap]    = (TH1D *)hMvsPtvsRap->ProjectionY(Form("hPt_RapBin%d",   irap), rapBinLow, rapBinHi, massBinLow, massBinHi);
-		hMass_Rap[irap]  = (TH1D *)hMvsPtvsRap->ProjectionZ(Form("hMass_RapBin%d", irap), rapBinLow, rapBinHi, ptBinLow,   ptBinHi  );
+		Int_t jpsiMBinLow      = hMvsPtvsRap->GetZaxis()->FindBin( mJpsiMassLow    + mTinyNum );
+		Int_t jpsiMBinHi       = hMvsPtvsRap->GetZaxis()->FindBin( mJpsiMassHi     - mTinyNum );
+		Int_t leftSideMBinLow  = hMvsPtvsRap->GetZaxis()->FindBin( mLowMassBandLow + mTinyNum );
+		Int_t leftSideMBinHi   = hMvsPtvsRap->GetZaxis()->FindBin( mLowMassBandHi  - mTinyNum );
+		Int_t rightSideMBinLow = hMvsPtvsRap->GetZaxis()->FindBin( mHiMassBandLow  + mTinyNum );
+		Int_t rightSideMBinHi  = hMvsPtvsRap->GetZaxis()->FindBin( mHiMassBandHi   - mTinyNum );
+		
+		hPt_Rap[irap]    = (TH1D *)hMvsPtvsRap->ProjectionY(Form("hPt_RapBin%d",   irap), rapBinLow, rapBinHi, jpsiMBinLow, jpsiMBinHi);
+		hMass_Rap[irap]  = (TH1D *)hMvsPtvsRap->ProjectionZ(Form("hMass_RapBin%d", irap), rapBinLow, rapBinHi, ptBinLow,    ptBinHi   );
+	
+		//------------------------------------------------------------------------------------------------------------------------------------------
+		//Get the left and right sideband's pt shape
+		hPt_LowMassBand_Rap[irap]   = (TH1D *)hMvsPtvsRap->ProjectionY(Form("hPt_LowMassBand_RapBin%d", irap), rapBinLow, rapBinHi, leftSideMBinLow,  leftSideMBinHi );
+		hPt_HiMassBand_Rap[irap]    = (TH1D *)hMvsPtvsRap->ProjectionY(Form("hPt_HiMassBand_RapBin%d",  irap), rapBinLow, rapBinHi, rightSideMBinLow, rightSideMBinHi);
 
-		massBinLow = hMvsPtvsRap->GetZaxis()->FindBin(mLowMassBandLow + mTinyNum);
-		massBinHi  = hMvsPtvsRap->GetZaxis()->FindBin(mLowMassBandHi - mTinyNum);
-		hPt_LowMassBand_Rap[irap]   = (TH1D *)hMvsPtvsRap->ProjectionY(Form("hPt_LowMassBand_RapBin%d", irap), rapBinLow, rapBinHi, massBinLow, massBinHi);
-
-		massBinLow = hMvsPtvsRap->GetZaxis()->FindBin(mHiMassBandLow + mTinyNum);
-		massBinHi  = hMvsPtvsRap->GetZaxis()->FindBin(mHiMassBandHi - mTinyNum);
-		hPt_HiMassBand_Rap[irap]   = (TH1D *)hMvsPtvsRap->ProjectionY(Form("hPt_HiMassBand_RapBin%d", irap), rapBinLow, rapBinHi, massBinLow, massBinHi);
-
+		//add the left and right side bands
 		hPt_SideBand_Rap[irap] = (TH1D *)hPt_LowMassBand_Rap[irap]->Clone(Form("hPt_SideBand_RapBin%d", irap));
-		hPt_SideBand_Rap[irap]->Add(hPt_HiMassBand_Rap[irap]);
+		hPt_SideBand_Rap[irap] ->Add(hPt_HiMassBand_Rap[irap]);
 
-		if(irap==0)
+		if( irap==0 )
 		{
 			hPt          = (TH1D *)hPt_Rap[irap]->Clone("hPt");
 			hPt          ->SetTitle(Form("%1.1f < |y| < %1.1f", mRapLow[nRapBins/2], mRapHi[nRapBins-1]));
@@ -143,26 +147,41 @@ void decoupleJpsi(Bool_t incHadron = kFALSE, TString hfVetoType="Default", Doubl
 			hPt_SideBand ->Add(hPt_SideBand_Rap[irap]);
 			hMass        ->Add(hMass_Rap[irap]);
 		}
+	}//irap, loop over rapidity
+
+	TFile* outfile_sideband = new TFile("./outdata/outfile_sideband_pt.root", "recreate");
+	outfile_sideband->cd();
+	//save the side bands pt shape for comp
+	for( Int_t irap=0; irap<nRapBins; irap++ )
+	{
+		hPt_LowMassBand_Rap[irap] ->Write();
+		hPt_HiMassBand_Rap[irap]  ->Write();
 	}
+	outfile_sideband ->Close();
+	
 
 	const int mRebMass = 1, mRebMass_Rap = 4;
 	const int mRebPt   = 1, mRebPt_Rap   = 5;
-	hMass       ->Rebin(mRebMass);
-	hPt         ->Rebin(mRebPt);
-	hPt_SideBand->Rebin(mRebPt);
+	
+	hMass        ->Rebin(mRebMass);
+	hPt          ->Rebin(mRebPt);
+	hPt_SideBand ->Rebin(mRebPt);
 
 	for(Int_t irap=0; irap<nRapBins; irap++)
 	{
-		hMass_Rap[irap]        ->Rebin(mRebMass_Rap);
-		hPt_Rap[irap]          ->Rebin(mRebPt_Rap);
-		hPt_SideBand_Rap[irap] ->Rebin(mRebPt_Rap);
+		hMass_Rap[irap]        ->Rebin( mRebMass_Rap);
+		hPt_Rap[irap]          ->Rebin( mRebPt_Rap  );
+		hPt_SideBand_Rap[irap] ->Rebin( mRebPt_Rap  );
 	}
 
-	TFile *fTemps = TFile::Open("../simulation/effAndTemp/MassPtTemp_AllSpecs.root");
 
-	TF1  *fCohJpsiTemp  = (TF1  *) fTemps->Get("fCohJpsiTemp");
-	TH1D *hJpsiMassHist = (TH1D *) fTemps->Get("hCohJpsiMass");
-	TH1D *hQEDMassHist  = (TH1D *) fTemps->Get("hLowMassGammaGammaMass");
+	TFile *inf_Temps = TFile::Open("../simulation/effAndTemp/MassPtTemp_AllSpecs.root");
+
+	//fTemp[i] = new TF1(Form("f%sTemp", specName[i].Data()), "[0]*(ROOT::Math::crystalball_function(x,[1],[2],[3]*[6],[4]) + [5]*TMath::Gaus(x, [4], [6], 0))", 0, 5);
+	//fTemp[i]->SetParNames("N","#alpha","n","#sigma_{cb}/#sigma_{gaus}","#mu","N_{gaus}","#sigma_{gaus}");
+	TF1  *fCohJpsiTemp  = (TF1  *) inf_Temps->Get("fCohJpsiTemp");
+	TH1D *hJpsiMassHist = (TH1D *) inf_Temps->Get("hCohJpsiMass");
+	TH1D *hQEDMassHist  = (TH1D *) inf_Temps->Get("hLowMassGammaGammaMass");
 
 	RooRealVar mMass("mMass", "m_{#mu#mu} (GeV)", massLow, massHi);
 	//RooRealVar cbAlpha("cbAlpha", "cbAlpha", fCohJpsiTemp->GetParameter(1), 0, 10);
@@ -198,11 +217,11 @@ void decoupleJpsi(Bool_t incHadron = kFALSE, TString hfVetoType="Default", Doubl
 	RooGenericPdf *qedPdf = new RooGenericPdf("qedPdf", "qedPdf", "mP0 + mP1*mMass + mP2*mMass*mMass + mP3*mMass*mMass*mMass", RooArgSet(mP0, mP1, mP2, mP3, mMass));
 
 	//// directly use QED template from simulation
-	//Int_t massBinLow = hQEDMassHist->GetXaxis()->FindBin(massLow + mTinyNum);
-	//Int_t massBinHi  = hQEDMassHist->GetXaxis()->FindBin(massHi - mTinyNum);
+	//Int_t jpsiMBinLow = hQEDMassHist->GetXaxis()->FindBin(massLow + mTinyNum);
+	//Int_t jpsiMBinHi  = hQEDMassHist->GetXaxis()->FindBin(massHi - mTinyNum);
 	//Int_t jpsiMassBinLow = hQEDMassHist->GetXaxis()->FindBin(mJpsiMassLow + mTinyNum);
 	//Int_t jpsiMassBinHi  = hQEDMassHist->GetXaxis()->FindBin(mJpsiMassHi - mTinyNum);
-	//Double_t mQEDFrac = hQEDMassHist->Integral(jpsiMassBinLow, jpsiMassBinHi)*1./hQEDMassHist->Integral(massBinLow, massBinHi);
+	//Double_t mQEDFrac = hQEDMassHist->Integral(jpsiMassBinLow, jpsiMassBinHi)*1./hQEDMassHist->Integral(jpsiMBinLow, jpsiMBinHi);
 
 	//hQEDMassHist->RebinX(5);
 	//RooDataHist hQEDMassRooHist("hQEDMassRooHist", "hQEDMassRooHist", mMass, hQEDMassHist);
@@ -215,19 +234,28 @@ void decoupleJpsi(Bool_t incHadron = kFALSE, TString hfVetoType="Default", Doubl
 	//RooAddPdf totMassPdf("totMassPdf", "totMassPdf", RooArgList(*jpsiPdf, *psiPdf, qedPdf), RooArgList(nJpsi, nPsi, nQED)); 
 
 	RooDataHist dataMass("dataMass", "dataMass", mMass, hMass); 
-	totMassPdf.fitTo(dataMass,Extended(kTRUE),SumW2Error(kTRUE),Hesse(kTRUE),Minos(kFALSE),Save());
-	//totMassPdf.fitTo(dataMass,Range(massLow, massHi),Extended(kTRUE),SumW2Error(kTRUE),Hesse(kTRUE),Minos(kFALSE),Save());
 
-	Int_t nFrameMBins = (massHi - massLow) / hMass->GetBinWidth(1);
+	//------------------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------------------
+	totMassPdf.fitTo( dataMass, Extended(kTRUE), SumW2Error(kTRUE), Hesse(kTRUE), Minos(kFALSE), Save());
+	//totMassPdf.fitTo(dataMass,Range(massLow, massHi),Extended(kTRUE),SumW2Error(kTRUE),Hesse(kTRUE),Minos(kFALSE),Save());
+	//------------------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------------------
+
+	TCanvas* c1 = new TCanvas("c1", "c1", 0, 0, 800, 600);
+	setPad(0.12, 0.08, 0.07, 0.13);
+	Int_t nFrameMBins = (massHi - massLow)/hMass->GetBinWidth(1);
 
 	c1->cd();
 	RooPlot *frameMass = mMass.frame(Range(massLow, massHi), Title(""), Bins(nFrameMBins));
+	//frameMass ->GetYaxis()->SetTitleSize(0.10);
+	frameMass ->GetYaxis()->SetTitleOffset(0.80);
 	dataMass.plotOn(frameMass, MarkerStyle(20), MarkerSize(1), MarkerColor(1), LineColor(1), LineWidth(2), DrawOption("pz"));
 	totMassPdf.plotOn(frameMass, LineColor(2), LineStyle(1), LineWidth(2));
 	//totMassPdf.plotOn(frameMass, Components(RooArgSet(jpsiPdf)), LineColor(kBlue), LineStyle(5), LineWidth(2));
 	totMassPdf.plotOn(frameMass, Components(RooArgSet(*jpsiPdf)), LineColor(kBlue), LineStyle(5), LineWidth(2));
 	//totMassPdf.plotOn(frameMass, Components(RooArgSet(*psiPdf)), LineColor(kOrange+1), LineStyle(6), LineWidth(2));
-	totMassPdf.plotOn(frameMass, Components(RooArgSet(*qedPdf)), LineColor(kMagenta), LineStyle(2), LineWidth(2));
+	totMassPdf.plotOn(frameMass, Components(RooArgSet(*qedPdf)), LineColor(qedColor), LineStyle(2), LineWidth(3));
 
 	//cout<<endl;
 	//cout<<"******** Print frame ********"<<endl;
@@ -239,31 +267,59 @@ void decoupleJpsi(Bool_t incHadron = kFALSE, TString hfVetoType="Default", Doubl
 	//Double_t chi2ndf = frameMass->chiSquare("","h_dataMass", 9);
 
 	frameMass->Draw() ;
-	drawLatex(0.18, 0.84, Form("%1.1f < |y| < %1.1f", mRapLow[nRapBins/2], mRapHi[nRapBins-1]), mTextFont, 0.05, mTextColor);
-	drawLatex(0.18, 0.72, Form("#chi^{2}/ndf = %1.1f", chi2ndf),                                mTextFont, mTextSize, mTextColor);
+	
+	drawLatex(0.18, 0.84, Form("%1.1f < |y| < %1.1f",  mRapLow[nRapBins/2], mRapHi[nRapBins-1]), mTextFont, 0.05, mTextColor);
+	drawLatex(0.18, 0.72, Form("#chi^{2}/ndf = %1.1f", chi2ndf),                                 mTextFont, mTextSize, mTextColor);
 	drawLatex(0.18, 0.66, Form("N_{J/#psi} = %d #pm %d", TMath::Nint(nJpsi.getVal()), TMath::Nint(nJpsi.getError())), mTextFont, mTextSize, mTextColor);
 	//drawLatex(0.18, 0.60, Form("N_{#psi(2S)} = %d #pm %d", TMath::Nint(nPsi.getVal()), TMath::Nint(nPsi.getError())), mTextFont, mTextSize, mTextColor);
 	drawLatex(0.18, 0.60, Form("N_{QED} = %d #pm %d", TMath::Nint(nQED.getVal()), TMath::Nint(nQED.getError())), mTextFont, mTextSize, mTextColor);
+	
+	//----------------------------------------------------------------------------------------------------------------------------------------------------
 	c1->SaveAs(Form("%s/massSpec.pdf", dirName.Data()));
+	//----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	//----------------------------------------------------------------------------------------------------------------------------------------------------
 	//----------------------------------------------------------------------------------------------------------------------------------------------------
-	// *** fit to pt distribution ***
+	// *** fit to Pt Distribution ***
 	//----------------------------------------------------------------------------------------------------------------------------------------------------
 	//----------------------------------------------------------------------------------------------------------------------------------------------------
 	
 	TCanvas* c2 = new TCanvas("c2", "c2", 900, 900);
 		
-	TH1D *hCohJpsiPtHist      = (TH1D *)fTemps->Get("hCohJpsiPt"          );
-	TH1D *hInCohJpsiPtHist    = (TH1D *)fTemps->Get("hInCohJpsiPt"        );
-	TH1D *hFeeddownJpsiPtHist = (TH1D *)fTemps->Get("hCohPsi2SFeeddownPt" );
-	TH1D *hQEDPtHist          = (TH1D *)fTemps->Get("hLowMassGammaGammaPt");
+	TH1D *hCohJpsiPtHist      = (TH1D *)inf_Temps->Get("hCohJpsiPt"          );
+	TH1D *hInCohJpsiPtHist    = (TH1D *)inf_Temps->Get("hInCohJpsiPt"        );
+	TH1D *hFeeddownJpsiPtHist = (TH1D *)inf_Temps->Get("hCohPsi2SFeeddownPt" );
+	TH1D *hQEDPtHist          = (TH1D *)inf_Temps->Get("hLowMassGammaGammaPt");
+
+	TFile* infile_CohJpsi_Shifted = new TFile("../templateFromData/compSideBands/outplots/outTemp_CohJpsi_shifted.root", "read");
+	TH1D* hCohJpsiPtHist_Shifted  = (TH1D*) infile_CohJpsi_Shifted->Get("hPt_CohJpsi_Sim_Shifted");
 
 	RooRealVar mPt("mPt", "p_{T} (GeV)", ptLow, ptHi);
 
-	hCohJpsiPtHist->RebinX(mRebPt);
-	RooDataHist hCohJpsiPtRooHist(     "hCohJpsiPtRooHist",      "hCohJpsiPtRooHist",      mPt, hCohJpsiPtHist);
+	hCohJpsiPtHist_Shifted->RebinX(mRebPt);
+	RooDataHist hCohJpsiPtRooHist(     "hCohJpsiPtRooHist",      "hCohJpsiPtRooHist",      mPt, hCohJpsiPtHist_Shifted);
 	RooHistPdf  cohJpsiPdf(            "cohJpsiPdf",             "cohJpsiPdf",             mPt, hCohJpsiPtRooHist,      0);
+	
+	//hCohJpsiPtHist->RebinX(mRebPt);
+	//RooDataHist hCohJpsiPtRooHist(     "hCohJpsiPtRooHist",      "hCohJpsiPtRooHist",      mPt, hCohJpsiPtHist);
+	//RooHistPdf  cohJpsiPdf(            "cohJpsiPdf",             "cohJpsiPdf",             mPt, hCohJpsiPtRooHist,      0);
 
 	hInCohJpsiPtHist->RebinX(mRebPt);
 	RooDataHist hInCohJpsiPtRooHist(   "hInCohJpsiPtRooHist",    "hInCohJpsiPtRooHist",    mPt, hInCohJpsiPtHist);
@@ -273,11 +329,25 @@ void decoupleJpsi(Bool_t incHadron = kFALSE, TString hfVetoType="Default", Doubl
 	RooDataHist hFeeddownJpsiPtRooHist("hFeeddownJpsiPtRooHist", "hFeeddownJpsiPtRooHist", mPt, hFeeddownJpsiPtHist);
 	RooHistPdf  feeddownJpsiPdf(       "feeddownJpsiPdf",        "feeddownJpsiPdf",        mPt, hFeeddownJpsiPtRooHist, 0);
 
-	//hQEDPtHist->RebinX(mRebPt);
-	//RooDataHist hQEDPtRooHist("hQEDPtRooHist", "hQEDPtRooHist", mPt, hQEDPtHist);
-	//RooHistPdf  qedPtPdf("qedPtPdf", "qedPtPdf", mPt, hQEDPtRooHist, 0);
+	//--------------------------------------------------------------------------------------
+	//------------------------gammagamma-->mumu--------------------------------------------------------------
+	//--------------------------------------------------------------------------------------
+	//	//if use the simulated tempaltes for gammagamma-->mumu
+	//	hQEDPtHist->RebinX(mRebPt);
+	//	RooDataHist hQEDPtRooHist("hQEDPtRooHist", "hQEDPtRooHist", mPt, hQEDPtHist);
+	//	RooHistPdf  qedPtPdf("qedPtPdf", "qedPtPdf", mPt, hQEDPtRooHist, 0);
+
+	//if use the side bands as tempaltes for gammagamma-->mumu
 	RooDataHist hQEDPtRooHist("hQEDPtRooHist", "hQEDPtRooHist", mPt, hPt_SideBand);
 	RooHistPdf  qedPtPdf(     "qedPtPdf",      "qedPtPdf",      mPt, hQEDPtRooHist, 0);
+
+//		//if use fitted gammagamma-->mumu via mass fitting in tiny pt bins
+//		TFile* infile_4QEDtempFromDataFit = new TFile("../templateFromData/outplots/outdata_pt_QED_CohJpsi.root", "read");
+//		TH1D* hPt_QED_fromDataFit = (TH1D*) infile_4QEDtempFromDataFit->Get("hPt_QED");
+//		RooDataHist hQEDPtRooHist("hQEDPtRooHist", "hQEDPtRooHist", mPt, hPt_QED_fromDataFit);
+//		RooHistPdf  qedPtPdf(     "qedPtPdf",      "qedPtPdf",      mPt, hQEDPtRooHist, 0   );
+	//--------------------------------------------------------------------------------------
+	//--------------------------------------------------------------------------------------
 
 	//RooConstVar bpd("bpd", "bpd", 1.79);
 	//RooConstVar npd("npd", "npd", 3.58);
@@ -292,12 +362,17 @@ void decoupleJpsi(Bool_t incHadron = kFALSE, TString hfVetoType="Default", Doubl
 	RooRealVar  nInCohJpsi(   "nInCohJpsi",     "nInCohJpsi",    1.2e4, 0, 5.e4);
 	RooRealVar  nFeeddownJpsi("nFeeddownJpsi",  "nFeeddownJpsi", 6.e2,  0, 1.e4);
 	RooRealVar  nDissoJpsi(   "nDissoJpsi",     "nDissoJpsi",    1.e4,  0, 5.e4);
-	RooRealVar  nQEDBg(       "nQEDBg",         "nQEDBg",        nQED.getVal()*mQEDFrac, 0, 5.e4);
-	//RooConstVar nQEDBg(       "nQEDBg",         "nQEDBg",        nQED.getVal()*mQEDFrac);
+	//RooRealVar  nQEDBg(       "nQEDBg",         "nQEDBg",        nQED.getVal()*mQEDFrac, 0, 5.e4);
+	RooConstVar nQEDBg(       "nQEDBg",         "nQEDBg",        nQED.getVal()*mQEDFrac);
+	
+	cout<<endl;
+	cout<<"nQED.getVal()*mQEDFrac: "<<nQED.getVal()*mQEDFrac<<endl;
+	cout<<endl;
+
 
 	RooAddPdf totPtPdf("totPtPdf", "totPtPdf", 
-			RooArgList(cohJpsiPdf, incohJpsiPdf, feeddownJpsiPdf, *dissoJpsiPdf, qedPtPdf),
-			RooArgList(nCohJpsi,   nInCohJpsi,   nFeeddownJpsi,    nDissoJpsi,   nQEDBg));
+			RooArgList(cohJpsiPdf, incohJpsiPdf, feeddownJpsiPdf, *dissoJpsiPdf, qedPtPdf ),
+			RooArgList(nCohJpsi,   nInCohJpsi,   nFeeddownJpsi,    nDissoJpsi,   nQEDBg)  );
 
 	RooDataHist dataPt("dataPt", "dataPt", mPt, hPt); 
 
@@ -310,10 +385,20 @@ void decoupleJpsi(Bool_t incHadron = kFALSE, TString hfVetoType="Default", Doubl
 
 	totPtPdf.fitTo(dataPt,Extended(kTRUE),SumW2Error(kTRUE),Hesse(kTRUE),Minos(kFALSE),Save());
 
+	cout<<endl;
+	cout<<"after fit: nQEDBg.getVal()"<<nQEDBg.getVal()<<endl;
+	cout<<endl;
+
+
 	Int_t nFramePtBins = (ptHi - ptLow)/hPt->GetBinWidth(1);
 	cout<<nFramePtBins<<endl;
 
+	//const double tem_ptLow = -0.02;
+	//const double tem_ptHi  =  3.6 ;
+
 	RooPlot *framePt = mPt.frame(Range(ptLow, ptHi), Title(""), Bins(nFramePtBins));
+	//RooPlot *framePt = mPt.frame(Range(tem_ptLow, tem_ptHi), Title(""), Bins(nFramePtBins));
+
 	dataPt  .plotOn(framePt, MarkerStyle(20), MarkerSize(0.6), MarkerColor(1), LineColor(1), LineWidth(mLineWidth), DrawOption("pz"));
 	totPtPdf.plotOn(framePt, LineColor(1), LineStyle(1), LineWidth(1));
 	totPtPdf.plotOn(framePt, Components(RooArgSet(cohJpsiPdf)),      LineColor(cohJpsiColor),      LineStyle(cohJpsiStyle),      LineWidth(mLineWidth));
@@ -322,14 +407,14 @@ void decoupleJpsi(Bool_t incHadron = kFALSE, TString hfVetoType="Default", Doubl
 	totPtPdf.plotOn(framePt, Components(RooArgSet(feeddownJpsiPdf)), LineColor(feeddownJpsiColor), LineStyle(feeddownJpsiStyle), LineWidth(mLineWidth));
 	totPtPdf.plotOn(framePt, Components(RooArgSet(qedPtPdf)),        LineColor(qedColor),          LineStyle(qedStyle),          LineWidth(mLineWidth));
 
-	cout<<endl;
-	cout<<"******** Print frame ********"<<endl;
-	framePt->Print();
-	cout<<"******** End ********"<<endl;
-	cout<<endl;
+	//cout<<endl;
+	//cout<<"******** Print frame ********"<<endl;
+	//framePt->Print();
+	//cout<<"******** End ********"<<endl;
+	//cout<<endl;
 	
-	//chi2ndf = framePt->chiSquare("totPtPdf_Norm[mPt]", "h_dataPt", 6);
-	chi2ndf = framePt->chiSquare("totPtPdf_Norm[mPt]", "h_dataPt", 7);
+	chi2ndf = framePt->chiSquare("totPtPdf_Norm[mPt]", "h_dataPt", 6);
+	//chi2ndf = framePt->chiSquare("totPtPdf_Norm[mPt]", "h_dataPt", 7);
 
 	c2 -> Divide(1,2);
 	c2 -> cd(1);
@@ -339,24 +424,14 @@ void decoupleJpsi(Bool_t incHadron = kFALSE, TString hfVetoType="Default", Doubl
 	gPad->SetTopMargin(0);
 	//setPad(0.12, 0.08, 0.07, 0.13);
 
+	//gPad->SetLogy(0);
+	//framePt->GetYaxis()->SetRangeUser(0.5, hPt->GetMaximum()*1.3);
 	gPad->SetLogy(1);
 	framePt->GetYaxis()->SetRangeUser(0.5, hPt->GetMaximum()*5);
 	framePt->Draw() ;
 	drawLatex(0.18, 0.82, Form("%1.1f < |y| < %1.1f",  mRapLow[nRapBins/2], mRapHi[nRapBins-1]), mTextFont, 0.05,      mTextColor);
 	drawLatex(0.15, 0.92, "CMS Pb-Pb #sqrt{s_{NN}} = 5.02 TeV UPC",                              42,       0.06,      mTextColor);
 	//drawLatex(0.24, 0.78, Form("#chi^{2}/ndf = %1.1f", chi2ndf),                                 mTextFont, mTextSize, mTextColor);
-
-	//	TF1  *cohJpsi      = new TF1("cohJpsi",      "1", 0, 1);
-	//	TF1  *incohJpsi    = new TF1("incohJpsi",    "1", 0, 1);
-	//	TF1  *dissoJpsi    = new TF1("dissoJpsi",    "1", 0, 1);
-	//	TF1  *feeddownJpsi = new TF1("feeddownJpsi", "1", 0, 1);
-	//	TF1  *qed          = new TF1("qed",          "1", 0, 1);
-	//
-	//	setFun(cohJpsi,       cohJpsiColor,      mLineWidth, cohJpsiStyle     );
-	//	setFun(incohJpsi,     incohJpsiColor,    mLineWidth, incohJpsiStyle   );
-	//	setFun(dissoJpsi,     dissoJpsiColor,    mLineWidth, dissoJpsiStyle   );
-	//	setFun(feeddownJpsi,  feeddownJpsiColor, mLineWidth, feeddownJpsiStyle);
-	//	setFun(qed, qedColor, mLineWidth, qedStyle);
 
 	TLegend  *leg =  new TLegend(0.54, 0.45, 0.84, 0.80);
 	leg->SetFillStyle(0);
@@ -392,6 +467,7 @@ void decoupleJpsi(Bool_t incHadron = kFALSE, TString hfVetoType="Default", Doubl
 	//TH1D* histPull_pt = (TH1D*) hpull_pt->GetHistogram();
 
 	RooPlot *framePtPull = mPt.frame(Range(ptLow, ptHi), Title(""), Bins(nFramePtBins));
+	//RooPlot *framePtPull = mPt.frame(Range(tem_ptLow, tem_ptHi), Title(""), Bins(nFramePtBins));
 	
 	hpull_pt ->SetMarkerStyle(24);
 	hpull_pt ->SetMarkerSize(0.6);

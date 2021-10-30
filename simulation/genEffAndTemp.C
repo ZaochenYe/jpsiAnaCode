@@ -21,10 +21,10 @@ void genEffAndTemp()
 	gStyle->SetOptFit(1111);
 	Int_t mFont = 42;
 
-	const Int_t nSpecs = 9;
-	TString specName[nSpecs]  = {"CohJpsi", "CohJpsi_0n0n", "CohJpsi_0nXn", "CohJpsi_XnXn", "InCohJpsi", "CohPsi2SFeeddown", "CohPsi2S", "InCohPsi2S", "LowMassGammaGamma"};
-	TString specTitle[nSpecs] = {"Coherent J/#psi", "Coherent J/#psi (0n0n)", "Coherent J/#psi (0nXn)", "Coherent J/#psi (XnXn)", "Incoherent J/#psi", "Coherent #psi(2S) #rightarrow J/#psi + X", "Coherent #psi(2S)", "Incoherent #psi(2S)", "#gamma#gamma#rightarrow#mu#mu"};
-	const Double_t mMass[nSpecs-1] = {3.096, 3.096, 3.096, 3.096, 3.096, 3.096, 3.686, 3.686};
+	const Int_t   nSpecs            = 9;
+	const TString specName[nSpecs]  = {"CohJpsi", "CohJpsi_0n0n", "CohJpsi_0nXn", "CohJpsi_XnXn", "InCohJpsi", "CohPsi2SFeeddown", "CohPsi2S", "InCohPsi2S", "LowMassGammaGamma"};
+	const TString specTitle[nSpecs] = {"Coherent J/#psi", "Coherent J/#psi (0n0n)", "Coherent J/#psi (0nXn)", "Coherent J/#psi (XnXn)", "Incoherent J/#psi", "Coherent #psi(2S) #rightarrow J/#psi + X", "Coherent #psi(2S)", "Incoherent #psi(2S)", "#gamma#gamma#rightarrow#mu#mu"};
+	const Double_t mMass[nSpecs-1]  = {3.096, 3.096, 3.096, 3.096, 3.096, 3.096, 3.686, 3.686};
 
 	//const Int_t nSpecs = 2;
 	//TString specName[nSpecs]  = {"CohJpsi", "LowMassGammaGamma"};
@@ -63,28 +63,29 @@ void genEffAndTemp()
 		}
 		else
 		{
-			massBinLow = hMvsPtvsRap_Gen[i]->GetZaxis()->FindBin(mJpsiMassLow + mTinyNum);
-			massBinHi  = hMvsPtvsRap_Gen[i]->GetZaxis()->FindBin(mJpsiMassHi  - mTinyNum);
+			massBinLow = hMvsPtvsRap_Gen[i]->GetZaxis()->FindBin( mJpsiMassLow + mTinyNum );
+			massBinHi  = hMvsPtvsRap_Gen[i]->GetZaxis()->FindBin( mJpsiMassHi  - mTinyNum );
 		}
 
-		hRap_Gen[i]      = (TH1D *)hMvsPtvsRap_Gen[i]      ->ProjectionX( Form("hRap_Gen_%s",      specName[i].Data()), 0, -1, massBinLow, massBinHi);
-		hRap_woEvtSel[i] = (TH1D *)hMvsPtvsRap_woEvtSel[i] ->ProjectionX( Form("hRap_woEvtSel_%s", specName[i].Data()), 0, -1, massBinLow, massBinHi);
-		hRap[i]          = (TH1D *)hMvsPtvsRap[i]          ->ProjectionX( Form("hRap_%s",          specName[i].Data()), 0, -1, massBinLow, massBinHi);
-
+		hRap_Gen[i]           = (TH1D *)hMvsPtvsRap_Gen[i]      ->ProjectionX( Form("hRap_Gen_%s",      specName[i].Data()), 0, -1, massBinLow, massBinHi );
+		hRap_woEvtSel[i]      = (TH1D *)hMvsPtvsRap_woEvtSel[i] ->ProjectionX( Form("hRap_woEvtSel_%s", specName[i].Data()), 0, -1, massBinLow, massBinHi );
+		hRap[i]               = (TH1D *)hMvsPtvsRap[i]          ->ProjectionX( Form("hRap_%s",          specName[i].Data()), 0, -1, massBinLow, massBinHi );
+		
+		//calculate efficiencies
 		hEffvsRap_woEvtSel[i] = (TH1D *)hRap_woEvtSel[i]->Clone(Form("hEffvsRap_woEvtSel_%s", specName[i].Data()));
 		hEffvsRap_woEvtSel[i] ->Divide( hRap_woEvtSel[i], hRap_Gen[i], 1, 1, "B");
-		hEffvsRap_woEvtSel[i] ->SetTitle(specTitle[i].Data());
+		hEffvsRap_woEvtSel[i] ->SetTitle( specTitle[i].Data() );
 		hEffvsRap_woEvtSel[i] ->GetYaxis()->SetTitle("Efficiency");
 
-		hEffvsRap[i] = (TH1D *)hRap[i]->Clone(Form("hEffvsRap_%s", specName[i].Data()));
-		hEffvsRap[i] ->Divide(hRap[i], hRap_Gen[i], 1, 1, "B");
-		hEffvsRap[i] ->SetTitle(specTitle[i].Data());
-		hEffvsRap[i] ->GetYaxis()->SetTitle("Efficiency");
+		hEffvsRap[i]          = (TH1D *)hRap[i]->Clone(Form("hEffvsRap_%s", specName[i].Data()));
+		hEffvsRap[i]          ->Divide( hRap[i], hRap_Gen[i], 1, 1, "B");
+		hEffvsRap[i]          ->SetTitle( specTitle[i].Data());
+		hEffvsRap[i]          ->GetYaxis()->SetTitle("Efficiency");
 
-		hEvtSelEffvsRap[i] = (TH1D *)hRap[i]->Clone(Form("hEvtSelEffvsRap_%s", specName[i].Data())); 
-		hEvtSelEffvsRap[i] ->Divide(hRap[i], hRap_woEvtSel[i], 1, 1, "B");
-		hEvtSelEffvsRap[i] ->SetTitle(specTitle[i].Data());
-		hEvtSelEffvsRap[i] ->GetYaxis()->SetTitle("Efficiency");
+		hEvtSelEffvsRap[i]    = (TH1D *)hRap[i]->Clone(Form("hEvtSelEffvsRap_%s", specName[i].Data())); 
+		hEvtSelEffvsRap[i]    ->Divide(hRap[i], hRap_woEvtSel[i], 1, 1, "B");
+		hEvtSelEffvsRap[i]    ->SetTitle(specTitle[i].Data());
+		hEvtSelEffvsRap[i]    ->GetYaxis()->SetTitle("Efficiency");
 
 		for(Int_t irap=0; irap<nRapBins; irap++)
 		{
@@ -120,6 +121,9 @@ void genEffAndTemp()
 		}
 	}
 
+	//----------------------------------------------------------------------------------------------------------------------------------------------------------
+	// write down efficiencies
+	//----------------------------------------------------------------------------------------------------------------------------------------------------------
 	TString dir = "effAndTemp";
 	system(Form("mkdir -p %s", dir.Data()));
 	system(Form("rm -rf %s/*", dir.Data()));
@@ -135,7 +139,11 @@ void genEffAndTemp()
 	}
 	
 	fOut->Close();
+	//----------------------------------------------------------------------------------------------------------------------------------------------------------
 
+	//----------------------------------------------------------------------------------------------------------------------------------------------------------
+	//draw efficiencies and templates
+	//----------------------------------------------------------------------------------------------------------------------------------------------------------
 	TCanvas* c1 = new TCanvas("c1", "c1", 0, 0, 800, 600);
 
 	TCanvas* c2 = new TCanvas("c2", "c2", 0, 0, 1200, 450);
@@ -164,44 +172,53 @@ void genEffAndTemp()
 		setHisto(hRap_Gen[i], 20, 1, 1, 1, 2);
 		setHisto(hRap_woEvtSel[i], 24, 1, 2, 2, 2);
 		setHisto(hRap[i], 25, 1, 4, 4, 2);
-		hRap_Gen[i]->GetYaxis()->SetTitle("Entries");
-		hRap_Gen[i]->SetMinimum(1);
-		hRap_Gen[i]->Draw("p");
-		hRap_woEvtSel[i]->Draw("psame");
-		hRap[i]->Draw("psame");
+		hRap_Gen[i]      ->GetYaxis()->SetTitle("Entries");
+		hRap_Gen[i]      ->SetMinimum(1);
+		hRap_Gen[i]      ->Draw("p");
+		hRap_woEvtSel[i] ->Draw("psame");
+		hRap[i]          ->Draw("psame");
 		
 		if(i==0)
 		{
-			leg1->AddEntry(hRap_Gen[i], "GEN", "pl");
-			leg1->AddEntry(hRap_woEvtSel[i], "#varepsilon_{reco}#times#varepsilon_{trig}", "pl");
-			leg1->AddEntry(hRap[i], "#varepsilon_{reco}#times#varepsilon_{trig}#times#varepsilon_{evtSel}", "pl");
+			leg1->AddEntry( hRap_Gen[i],      "GEN",                                                                  "pl");
+			leg1->AddEntry( hRap_woEvtSel[i], "#varepsilon_{reco}#times#varepsilon_{trig}",                           "pl");
+			leg1->AddEntry( hRap[i],          "#varepsilon_{reco}#times#varepsilon_{trig}#times#varepsilon_{evtSel}", "pl");
 		}
 		leg1->Draw("same");
-		if(specName[i].EqualTo("CohPsi2SFeeddown"))       drawLatex(0.27, 0.95, Form("%s", specTitle[i].Data()), mFont, 0.06, 1);
+		
+		if(     specName[i].EqualTo("CohPsi2SFeeddown"))  drawLatex(0.27, 0.95, Form("%s", specTitle[i].Data()), mFont, 0.06, 1);
 		else if(specName[i].EqualTo("LowMassGammaGamma")) drawLatex(0.43, 0.95, Form("%s", specTitle[i].Data()), mFont, 0.06, 1);
 		else                                              drawLatex(0.38, 0.95, Form("%s", specTitle[i].Data()), mFont, 0.06, 1);
 
 		c2->cd(2);
 		gPad->SetLogy(1);
 		setHisto(hEffvsRap_woEvtSel[i], 24, 1, 2, 2, 2);
-		setHisto(hEffvsRap[i], 25, 1, 4, 4, 2);
-		hEffvsRap_woEvtSel[i]->SetMaximum(1);
-		hEffvsRap_woEvtSel[i]->Draw("p");
-		hEffvsRap[i]->Draw("psame");
+		setHisto(hEffvsRap[i],          25, 1, 4, 4, 2);
+
+		hEffvsRap_woEvtSel[i] ->SetMaximum(1);
+		hEffvsRap_woEvtSel[i] ->Draw("p");
+		hEffvsRap[i]          ->Draw("psame");
 
 		if(i==0)
 		{
-			leg2->AddEntry(hEffvsRap_woEvtSel[i], "#varepsilon_{reco}#times#varepsilon_{trig}", "pl");
-			leg2->AddEntry(hEffvsRap[i], "#varepsilon_{reco}#times#varepsilon_{trig}#times#varepsilon_{evtSel}", "pl");
+			leg2->AddEntry(hEffvsRap_woEvtSel[i], "#varepsilon_{reco}#times#varepsilon_{trig}",                           "pl");
+			leg2->AddEntry(hEffvsRap[i],          "#varepsilon_{reco}#times#varepsilon_{trig}#times#varepsilon_{evtSel}", "pl");
 		}
 		leg2->Draw("same");
-		if(specName[i].EqualTo("CohPsi2SFeeddown"))       drawLatex(0.27, 0.95, Form("%s", specTitle[i].Data()), mFont, 0.06, 1);
+		
+		if(     specName[i].EqualTo("CohPsi2SFeeddown") ) drawLatex(0.27, 0.95, Form("%s", specTitle[i].Data()), mFont, 0.06, 1);
 		else if(specName[i].EqualTo("LowMassGammaGamma")) drawLatex(0.43, 0.95, Form("%s", specTitle[i].Data()), mFont, 0.06, 1);
 		else                                              drawLatex(0.38, 0.95, Form("%s", specTitle[i].Data()), mFont, 0.06, 1);
 
 		c2->SaveAs(Form("%s/EffvsRap_%s.pdf", dir.Data(), specName[i].Data()));
 		c2->SaveAs(Form("%s/EffvsRap_%s.png", dir.Data(), specName[i].Data()));
+		//----------------------------------------------------------------------------------------------------------------------------------------------------------
+		//----------------------------------------------------------------------------------------------------------------------------------------------------------
 
+
+		//----------------------------------------------------------------------------------------------------------------------------------------------------------
+		// working for templates
+		//----------------------------------------------------------------------------------------------------------------------------------------------------------
 		TString tempDir = Form("%s/%sTemp", dir.Data(), specName[i].Data());
 		system(Form("mkdir -p %s", tempDir.Data()));
 
@@ -329,8 +346,8 @@ void genEffAndTemp()
 			}
 			else if(specName[i].Contains("Psi2S"))
 			{
-				if(specName[i].Contains("Feeddown")) hMass_Rap[i][irap]->GetXaxis()->SetRangeUser(2.5, 4);
-				else                                 hMass_Rap[i][irap]->GetXaxis()->SetRangeUser(3, 4.5);
+				if(specName[i].Contains("Feeddown")) hMass_Rap[i][irap]->GetXaxis()->SetRangeUser(2.5, 4.0);
+				else                                 hMass_Rap[i][irap]->GetXaxis()->SetRangeUser(3.0, 4.5);
 			}
 			
 			//hMass_Rap[i][irap]->GetYaxis()->SetRangeUser(0.5, hMass_Rap[i][irap]->GetMaximum()*2);
@@ -375,8 +392,8 @@ void genEffAndTemp()
 
 			c2->SaveAs(Form("%s/%sTemp_RapBin%d.pdf", tempDir.Data(), specName[i].Data(), irap));
 			c2->SaveAs(Form("%s/%sTemp_RapBin%d.png", tempDir.Data(), specName[i].Data(), irap));
-		}
-	}
+		}//iy
+	}//ispec
 
 	TFile *fOutTemp = new TFile(Form("%s/MassPtTemp_AllSpecs.root", dir.Data()), "recreate");
 	fOutTemp->cd();
